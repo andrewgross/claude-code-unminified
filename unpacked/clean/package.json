@@ -23,7 +23,10 @@
   "author": "Extracted from original Claude Code implementation",
   "license": "MIT",
   "dependencies": {
-    "commander": "^11.0.0"
+    "commander": "^11.0.0",
+    "ink": "^4.4.0",
+    "react": "^18.2.0",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.0"

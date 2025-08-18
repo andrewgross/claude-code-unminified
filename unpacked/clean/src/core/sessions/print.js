@@ -7,6 +7,7 @@
 
 import { tokenManager } from '../auth/token.js';
 import { configManager } from '../../config/manager.js';
+import { claudeAPIClient } from '../api/client.js';
 
 /**
  * Execute Claude in print mode (non-interactive)
@@ -46,22 +47,64 @@ export async function executePrintMode(prompt, options) {
     }
     
     try {
-        // Simulate API call (TODO: implement actual Claude API integration)
-        const response = await simulateClaudeAPI(prompt, {
-            model,
-            token: await tokenManager.getToken(),
-            outputFormat,
-            maxTurns: options.maxTurns,
-            systemPrompt: options.systemPrompt,
-            debug: options.debug
-        });
+        // Test API connection first
+        if (options.debug) {
+            console.error('Debug: Testing API connection...');
+            const connectionTest = await claudeAPIClient.testConnection();
+            if (!connectionTest.success) {
+                console.error(`Debug: API connection failed: ${connectionTest.error}`);
+                console.error('Debug: Falling back to simulation...');
+                
+                // Fall back to simulation
+                const response = await simulateClaudeAPI(prompt, {
+                    model, outputFormat, maxTurns: options.maxTurns,
+                    systemPrompt: options.systemPrompt, debug: options.debug
+                });
+                await outputResponse(response, outputFormat, options);
+                return;
+            }
+            console.error('Debug: API connection successful');
+        }
+
+        // Prepare messages
+        const messages = [{ role: 'user', content: prompt }];
         
-        // Format and output response
-        await outputResponse(response, outputFormat, options);
+        // Call real Claude API
+        const apiOptions = {
+            messages,
+            model,
+            maxTokens: 4096,
+            systemPrompt: options.systemPrompt,
+            stream: outputFormat === 'stream-json'
+        };
+
+        if (outputFormat === 'stream-json') {
+            // Handle streaming response
+            await handleStreamingResponse(apiOptions, options);
+        } else {
+            // Handle single response
+            const response = await claudeAPIClient.sendMessage(apiOptions);
+            await outputResponse(response, outputFormat, options);
+        }
         
     } catch (error) {
         if (options.debug) {
             console.error('Debug: Error in print mode:', error);
+        }
+        
+        // If API fails, fall back to simulation with clear indication
+        if (error.message.includes('HTTP') || error.message.includes('fetch')) {
+            console.error('⚠️  API request failed, falling back to simulation mode...');
+            try {
+                const response = await simulateClaudeAPI(prompt, {
+                    model, outputFormat, maxTurns: options.maxTurns,
+                    systemPrompt: options.systemPrompt, debug: options.debug
+                });
+                await outputResponse(response, outputFormat, options);
+                return;
+            } catch (simError) {
+                console.error(`Simulation also failed: ${simError.message}`);
+            }
         }
         
         console.error(`Error: ${error.message}`);
@@ -70,7 +113,47 @@ export async function executePrintMode(prompt, options) {
 }
 
 /**
- * Simulate Claude API call (placeholder for actual implementation)
+ * Handle streaming API response
+ */
+async function handleStreamingResponse(apiOptions, options) {
+    try {
+        const stream = await claudeAPIClient.sendMessage(apiOptions);
+        
+        for await (const chunk of stream) {
+            if (chunk.type === 'content_block_delta') {
+                const output = {
+                    type: 'content_block_delta',
+                    index: chunk.index,
+                    delta: chunk.delta
+                };
+                console.log(JSON.stringify(output));
+            } else if (chunk.type === 'message_start') {
+                const output = {
+                    type: 'response_start',
+                    response: {
+                        id: chunk.message.id,
+                        model: chunk.message.model
+                    }
+                };
+                console.log(JSON.stringify(output));
+            } else if (chunk.type === 'message_delta') {
+                const output = {
+                    type: 'message_delta',
+                    delta: chunk.delta
+                };
+                console.log(JSON.stringify(output));
+            } else if (chunk.type === 'message_stop') {
+                const output = { type: 'message_stop' };
+                console.log(JSON.stringify(output));
+            }
+        }
+    } catch (error) {
+        throw new Error(`Streaming failed: ${error.message}`);
+    }
+}
+
+/**
+ * Simulate Claude API call (fallback implementation)
  * 
  * @param {string} prompt - User prompt
  * @param {object} options - API options

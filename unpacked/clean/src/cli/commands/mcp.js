@@ -102,6 +102,56 @@ export function mcpCommands(program) {
         .action(async () => {
             await resetProjectChoices();
         });
+
+    // MCP server status and management
+    mcpCommand
+        .command('status')
+        .description('Show status of configured MCP servers')
+        .option('-v, --verbose', 'Show detailed server information')
+        .helpOption('-h, --help', 'Display help for command')
+        .action(async (options) => {
+            await showMcpStatus(options);
+        });
+
+    // Start MCP servers
+    mcpCommand
+        .command('start [servers...]')
+        .description('Start MCP server connections (all servers if none specified)')
+        .option('-d, --debug', 'Enable debug mode for connections')
+        .helpOption('-h, --help', 'Display help for command')
+        .action(async (servers, options) => {
+            await startMcpServers(servers, options);
+        });
+
+    // Stop MCP servers
+    mcpCommand
+        .command('stop [servers...]')
+        .description('Stop MCP server connections (all servers if none specified)')
+        .helpOption('-h, --help', 'Display help for command')
+        .action(async (servers) => {
+            await stopMcpServers(servers);
+        });
+
+    // List available tools
+    mcpCommand
+        .command('tools')
+        .description('List available tools from connected MCP servers')
+        .option('-v, --verbose', 'Show detailed tool information')
+        .helpOption('-h, --help', 'Display help for command')
+        .action(async (options) => {
+            await listMcpTools(options);
+        });
+
+    // Execute a tool
+    mcpCommand
+        .command('call <toolName> [args...]')
+        .description('Execute a tool via MCP protocol (args as key=value pairs)')
+        .option('-j, --json <json>', 'Provide arguments as JSON string')
+        .option('-v, --verbose', 'Show verbose output')
+        .helpOption('-h, --help', 'Display help for command')
+        .action(async (toolName, args, options) => {
+            await executeMcpTool(toolName, args, options);
+        });
 }
 
 /**
@@ -275,6 +325,238 @@ async function resetProjectChoices() {
         console.log('Reset all project-scoped MCP server choices');
     } catch (error) {
         console.error(`Error resetting project choices: ${error.message}`);
+        process.exit(1);
+    }
+}
+
+/**
+ * Show MCP server status
+ */
+async function showMcpStatus(options) {
+    try {
+        const servers = await mcpServerManager.listServers();
+        const connectionStatus = mcpServerManager.getConnectionStatus();
+        
+        if (servers.length === 0) {
+            console.log('No MCP servers configured');
+            return;
+        }
+        
+        console.log(`Found ${servers.length} configured MCP server(s):\n`);
+        
+        for (const server of servers) {
+            const status = connectionStatus.find(s => s.name === server.name);
+            const isConnected = status?.connected || false;
+            const statusIcon = isConnected ? '🟢' : '🔴';
+            const statusText = isConnected ? 'Connected' : 'Disconnected';
+            
+            console.log(`${statusIcon} ${server.name} (${server.scope} scope) - ${statusText}`);
+            console.log(`   Command: ${server.command}`);
+            console.log(`   Transport: ${server.transport}`);
+            
+            if (isConnected && status) {
+                console.log(`   Tools: ${status.toolCount}, Resources: ${status.resourceCount}`);
+            }
+            
+            if (options.verbose) {
+                console.log(`   Config: ${server.configPath}`);
+                if (server.args && server.args.length > 0) {
+                    console.log(`   Args: [${server.args.join(', ')}]`);
+                }
+                if (server.env) {
+                    console.log(`   Env: ${JSON.stringify(server.env, null, 6)}`);
+                }
+            }
+            console.log();
+        }
+        
+        const connectedCount = connectionStatus.filter(s => s.connected).length;
+        console.log(`\nConnection Summary: ${connectedCount}/${servers.length} servers connected`);
+        
+    } catch (error) {
+        console.error(`Error getting MCP status: ${error.message}`);
+        process.exit(1);
+    }
+}
+
+/**
+ * Start MCP servers
+ */
+async function startMcpServers(servers, options) {
+    try {
+        console.log('Starting MCP server connections...\n');
+        
+        // Initialize the manager with debug option
+        if (options.debug) {
+            mcpServerManager._connectionPool.options.debug = true;
+        }
+        
+        await mcpServerManager.startServers(servers);
+        
+        // Show status after starting
+        const connectionStatus = mcpServerManager.getConnectionStatus();
+        const connectedCount = connectionStatus.filter(s => s.connected).length;
+        
+        console.log(`\n✅ Successfully connected to ${connectedCount} MCP server(s)`);
+        
+        if (connectedCount > 0) {
+            console.log('\nAvailable tools:');
+            const tools = mcpServerManager.getAvailableTools();
+            if (tools.length > 0) {
+                tools.forEach(tool => {
+                    console.log(`  • ${tool.name} (${tool.serverName})`);
+                });
+            } else {
+                console.log('  No tools available from connected servers');
+            }
+        }
+        
+    } catch (error) {
+        console.error(`Error starting MCP servers: ${error.message}`);
+        process.exit(1);
+    }
+}
+
+/**
+ * Stop MCP servers
+ */
+async function stopMcpServers(servers) {
+    try {
+        console.log('Stopping MCP server connections...');
+        
+        await mcpServerManager.stopServers(servers);
+        
+        if (servers && servers.length > 0) {
+            console.log(`✅ Stopped MCP servers: ${servers.join(', ')}`);
+        } else {
+            console.log('✅ Stopped all MCP servers');
+        }
+        
+    } catch (error) {
+        console.error(`Error stopping MCP servers: ${error.message}`);
+        process.exit(1);
+    }
+}
+
+/**
+ * List available MCP tools
+ */
+async function listMcpTools(options) {
+    try {
+        const tools = mcpServerManager.getAvailableTools();
+        const connectionStatus = mcpServerManager.getConnectionStatus();
+        
+        const connectedCount = connectionStatus.filter(s => s.connected).length;
+        
+        if (connectedCount === 0) {
+            console.log('❌ No MCP servers connected. Use "claude mcp start" to connect to servers.');
+            return;
+        }
+        
+        if (tools.length === 0) {
+            console.log(`Connected to ${connectedCount} server(s) but no tools are available.`);
+            return;
+        }
+        
+        console.log(`Available tools from ${connectedCount} connected MCP server(s):\n`);
+        
+        // Group tools by server
+        const toolsByServer = {};
+        tools.forEach(tool => {
+            if (!toolsByServer[tool.serverName]) {
+                toolsByServer[tool.serverName] = [];
+            }
+            toolsByServer[tool.serverName].push(tool);
+        });
+        
+        for (const [serverName, serverTools] of Object.entries(toolsByServer)) {
+            console.log(`🔧 ${serverName} (${serverTools.length} tool${serverTools.length === 1 ? '' : 's'}):`);
+            
+            for (const tool of serverTools) {
+                console.log(`   • ${tool.name}`);
+                
+                if (options.verbose && tool.description) {
+                    console.log(`     ${tool.description}`);
+                }
+                
+                if (options.verbose && tool.inputSchema) {
+                    console.log(`     Input: ${JSON.stringify(tool.inputSchema.properties || {}, null, 2)}`);
+                }
+            }
+            console.log();
+        }
+        
+        console.log(`Total: ${tools.length} tool${tools.length === 1 ? '' : 's'} available`);
+        
+    } catch (error) {
+        console.error(`Error listing MCP tools: ${error.message}`);
+        process.exit(1);
+    }
+}
+
+/**
+ * Execute an MCP tool
+ */
+async function executeMcpTool(toolName, args, options) {
+    try {
+        // Parse arguments
+        let toolArgs = {};
+        
+        if (options.json) {
+            // Parse JSON arguments
+            try {
+                toolArgs = JSON.parse(options.json);
+            } catch (error) {
+                console.error(`Error parsing JSON arguments: ${error.message}`);
+                process.exit(1);
+            }
+        } else if (args && args.length > 0) {
+            // Parse key=value arguments
+            for (const arg of args) {
+                const [key, value] = arg.split('=', 2);
+                if (key && value !== undefined) {
+                    // Try to parse as JSON first, fallback to string
+                    try {
+                        toolArgs[key] = JSON.parse(value);
+                    } catch {
+                        toolArgs[key] = value;
+                    }
+                }
+            }
+        }
+        
+        console.log(`Executing tool: ${toolName}`);
+        if (options.verbose) {
+            console.log(`Arguments: ${JSON.stringify(toolArgs, null, 2)}`);
+        }
+        console.log();
+        
+        // Execute the tool
+        const result = await mcpServerManager.executeTool(toolName, toolArgs);
+        
+        console.log('✅ Tool execution completed\n');
+        
+        // Display results
+        if (result.content) {
+            for (const content of result.content) {
+                if (content.type === 'text') {
+                    console.log(content.text);
+                } else if (content.type === 'image') {
+                    console.log(`[Image: ${content.data}]`);
+                } else {
+                    console.log(`[${content.type}]: ${JSON.stringify(content, null, 2)}`);
+                }
+            }
+        } else {
+            console.log('Result:', JSON.stringify(result, null, 2));
+        }
+        
+        if (options.verbose && result.meta) {
+            console.log(`\nMeta: ${JSON.stringify(result.meta, null, 2)}`);
+        }
+        
+    } catch (error) {
+        console.error(`❌ Tool execution failed: ${error.message}`);
         process.exit(1);
     }
 }

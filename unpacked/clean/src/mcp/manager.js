@@ -9,6 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { configManager } from '../config/manager.js';
+import { McpConnectionPool } from './protocol.js';
 
 // Configuration file paths for different scopes
 const MCP_CONFIG_PATHS = {
@@ -25,9 +26,25 @@ const CLAUDE_DESKTOP_PATHS = {
 };
 
 export class McpServerManager {
-    constructor() {
+    constructor(options = {}) {
         this._serverCache = new Map();
         this._configCache = new Map();
+        this._connectionPool = new McpConnectionPool({
+            debug: options.debug
+        });
+        
+        // Set up connection pool event handlers
+        this._connectionPool.on('serverConnect', (name) => {
+            console.log(`✅ MCP server '${name}' connected`);
+        });
+        
+        this._connectionPool.on('serverDisconnect', (name) => {
+            console.log(`⚠️  MCP server '${name}' disconnected`);
+        });
+        
+        this._connectionPool.on('serverError', (name, error) => {
+            console.error(`❌ MCP server '${name}' error:`, error.message);
+        });
     }
     
     /**
@@ -357,6 +374,90 @@ export class McpServerManager {
         } else {
             console.log('No project MCP configuration found');
         }
+    }
+    
+    /**
+     * Start MCP server connections
+     * @param {Array} serverNames - Optional list of server names to start
+     */
+    async startServers(serverNames = null) {
+        const servers = await this.listServers();
+        const serversToStart = serverNames 
+            ? servers.filter(server => serverNames.includes(server.name))
+            : servers;
+        
+        const startPromises = serversToStart.map(async (serverConfig) => {
+            try {
+                await this._connectionPool.addServer(serverConfig.name, {
+                    command: serverConfig.command,
+                    args: serverConfig.args,
+                    transport: serverConfig.transport,
+                    env: serverConfig.env
+                });
+            } catch (error) {
+                console.warn(`Warning: Failed to start MCP server '${serverConfig.name}':`, error.message);
+            }
+        });
+        
+        await Promise.allSettled(startPromises);
+        
+        const connectedCount = this._connectionPool.getConnectionStatus()
+            .filter(status => status.connected).length;
+        
+        console.log(`Started ${connectedCount}/${serversToStart.length} MCP servers`);
+    }
+    
+    /**
+     * Stop MCP server connections
+     * @param {Array} serverNames - Optional list of server names to stop
+     */
+    async stopServers(serverNames = null) {
+        if (serverNames) {
+            for (const name of serverNames) {
+                await this._connectionPool.removeServer(name);
+            }
+        } else {
+            await this._connectionPool.disconnectAll();
+        }
+    }
+    
+    /**
+     * Execute a tool using MCP protocol
+     * @param {string} toolName - Name of the tool to execute
+     * @param {object} arguments_ - Tool arguments
+     * @returns {Promise<object>} Tool execution result
+     */
+    async executeTool(toolName, arguments_) {
+        try {
+            return await this._connectionPool.executeTool(toolName, arguments_);
+        } catch (error) {
+            throw new Error(`Tool execution failed: ${error.message}`);
+        }
+    }
+    
+    /**
+     * Get all available tools from connected servers
+     * @returns {Array} Available tools with server information
+     */
+    getAvailableTools() {
+        return this._connectionPool.getAllAvailableTools();
+    }
+    
+    /**
+     * Get connection status for all servers
+     * @returns {Array} Connection status information
+     */
+    getConnectionStatus() {
+        return this._connectionPool.getConnectionStatus();
+    }
+    
+    /**
+     * Get MCP client for a specific server
+     * @param {string} serverName - Name of the server
+     * @returns {McpClient|null} MCP client or null if not connected
+     */
+    getClient(serverName) {
+        return this._connectionPool.getClient(serverName);
     }
     
     /**

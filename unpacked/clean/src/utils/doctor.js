@@ -33,6 +33,7 @@ export class SystemDoctor {
         await this._checkConfiguration(results);
         await this._checkPermissions(results);
         await this._checkMCPConfig(results);
+        await this._checkMCPConnections(results);
         
         // Determine overall status
         results.overall.passed = results.checks.every(check => check.passed);
@@ -180,6 +181,50 @@ export class SystemDoctor {
     }
     
     /**
+     * Check MCP server connections
+     */
+    async _checkMCPConnections(results) {
+        try {
+            const connectionStatus = mcpServerManager.getConnectionStatus();
+            const connectedCount = connectionStatus.filter(s => s.connected).length;
+            const totalServers = connectionStatus.length;
+            
+            if (totalServers === 0) {
+                results.checks.push({
+                    name: 'MCP Connections',
+                    passed: true, // No servers configured is OK
+                    message: 'No MCP servers to connect to',
+                    details: 'Use "claude mcp start" after configuring servers'
+                });
+            } else {
+                const toolCount = connectionStatus
+                    .filter(s => s.connected)
+                    .reduce((sum, s) => sum + s.toolCount, 0);
+                
+                results.checks.push({
+                    name: 'MCP Connections',
+                    passed: connectedCount === totalServers,
+                    message: connectedCount > 0
+                        ? `${connectedCount}/${totalServers} MCP server(s) connected`
+                        : 'No MCP servers connected',
+                    details: connectedCount > 0 
+                        ? `${toolCount} tool(s) available from connected servers`
+                        : totalServers > 0 
+                            ? 'Use "claude mcp start" to connect to configured servers'
+                            : null
+                });
+            }
+        } catch (error) {
+            results.checks.push({
+                name: 'MCP Connections',
+                passed: false,
+                message: 'Failed to check MCP connections',
+                details: error.message
+            });
+        }
+    }
+    
+    /**
      * Add recommendations based on failed checks
      */
     _addRecommendations(results) {
@@ -198,6 +243,9 @@ export class SystemDoctor {
                     break;
                 case 'File Permissions':
                     results.recommendations.push('Check file permissions for config and token directories');
+                    break;
+                case 'MCP Connections':
+                    results.recommendations.push('Use "claude mcp start" to connect to MCP servers');
                     break;
                 default:
                     results.recommendations.push(`Fix issues with: ${check.name}`);
