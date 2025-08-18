@@ -14,6 +14,7 @@ import { mainCommand } from './commands/main.js';
 import { configCommands } from './commands/config.js';
 import { mcpCommands } from './commands/mcp.js';
 import { utilityCommands } from './commands/utility.js';
+import { setupDefaultHooks } from '../utils/hooks.js';
 
 /**
  * Create and configure the main CLI application
@@ -86,6 +87,9 @@ export async function createCLI() {
 
 // Main execution if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
+    // Set up process hooks for proper lifecycle management
+    setupDefaultHooks();
+    
     createCLI().catch(error => {
         console.error('Failed to start Claude CLI:', error);
         process.exit(1);

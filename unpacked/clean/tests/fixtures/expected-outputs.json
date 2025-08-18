@@ -1,0 +1,43 @@
+{
+  "helpOutputs": {
+    "main": {
+      "title": "Claude Code - starts an interactive session by default, use -p/--print for non-interactive output",
+      "requiredOptions": [
+        "--debug",
+        "--verbose", 
+        "--print",
+        "--output-format",
+        "--continue",
+        "--resume",
+        "--model"
+      ],
+      "requiredCommands": [
+        "config",
+        "mcp", 
+        "setup-token",
+        "doctor",
+        "update",
+        "install",
+        "migrate-installer"
+      ]
+    },
+    "config": {
+      "requiredSubcommands": ["get", "set", "remove", "list", "add"],
+      "requiredOptions": ["--global"]
+    },
+    "mcp": {
+      "requiredSubcommands": ["serve", "add", "remove", "list", "get"],
+      "requiredOptions": ["--scope", "--transport"]
+    }
+  },
+  "errorMessages": {
+    "noToken": "No authentication token found",
+    "invalidConfig": "Invalid configuration",
+    "invalidCommand": "Unknown command"
+  },
+  "successMessages": {
+    "tokenSaved": "Token saved successfully",
+    "configSet": "Configuration updated",
+    "serverAdded": "MCP server added"
+  }
+}
