@@ -1,0 +1,42 @@
+{
+  "name": "claude-code-clean",
+  "version": "1.0.0",
+  "description": "Clean, readable implementation of Claude Code CLI extracted from bundled JavaScript",
+  "type": "module",
+  "main": "src/cli/index.js",
+  "bin": {
+    "claude": "src/cli/index.js"
+  },
+  "scripts": {
+    "start": "node src/cli/index.js",
+    "dev": "node --inspect src/cli/index.js",
+    "test": "echo 'Tests not yet implemented' && exit 1"
+  },
+  "keywords": [
+    "claude",
+    "ai",
+    "cli",
+    "anthropic",
+    "assistant",
+    "mcp"
+  ],
+  "author": "Extracted from original Claude Code implementation",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^11.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "directories": {
+    "doc": "docs",
+    "lib": "src"
+  },
+  "repository": {
+    "type": "git",
+    "url": "extracted from claude-code bundle"
+  }
+}
