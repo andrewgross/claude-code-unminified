@@ -1,0 +1,124 @@
+{
+  "metadata": {
+    "timestamp": "2025-08-18T20:24:11.600Z",
+    "inputFile": "chunk_0001.js",
+    "inputSize": 19317,
+    "projectDescription": "A chunk of claude code cli js",
+    "toolVersion": "1.0.0"
+  },
+  "processing": {
+    "totalIdentifiers": 128,
+    "processingTime": 217,
+    "contextPatterns": [
+      "cliArgument",
+      "cliCommand"
+    ],
+    "qualityMetrics": {
+      "semantic": 76,
+      "contextual": 24,
+      "generic": 28
+    }
+  },
+  "namingAnalysis": {
+    "semanticNames": 76,
+    "contextualNames": 24,
+    "genericNames": 28,
+    "semanticPercentage": 59,
+    "topRenames": [
+      [
+        "alB",
+        "objectVar"
+      ],
+      [
+        "olB",
+        "objectVar"
+      ],
+      [
+        "G1",
+        "cliHandler"
+      ],
+      [
+        "bj",
+        "cliHandler"
+      ],
+      [
+        "K21",
+        "dataVar"
+      ],
+      [
+        "W1",
+        "dataVar"
+      ],
+      [
+        "Gy0",
+        "fsOperation"
+      ],
+      [
+        "sg8",
+        "fsOperation"
+      ],
+      [
+        "Dy0",
+        "fsOperation"
+      ],
+      [
+        "By0",
+        "fsOperation"
+      ],
+      [
+        "Qy0",
+        "fsOperation"
+      ],
+      [
+        "Zy0",
+        "fsOperation"
+      ],
+      [
+        "xtB",
+        "fsOperation"
+      ],
+      [
+        "Jy0",
+        "fsOperation"
+      ],
+      [
+        "rg8",
+        "fsOperation"
+      ],
+      [
+        "Wy0",
+        "fsOperation"
+      ],
+      [
+        "Fy0",
+        "fsOperation"
+      ],
+      [
+        "Iy0",
+        "fsOperation"
+      ],
+      [
+        "vtB",
+        "fsOperation"
+      ],
+      [
+        "Yy0",
+        "fsOperation"
+      ]
+    ]
+  },
+  "recommendations": [
+    "Consider using LLM-based naming for higher semantic quality",
+    "Review comparison files to verify naming accuracy",
+    "Consider manual refinement of key function names"
+  ],
+  "workspace": {
+    "structure": {
+      "original/": "Preserved original files",
+      "humanified/": "Processed output files",
+      "comparison/": "Before/after comparisons",
+      "metadata/": "Rename maps and statistics",
+      "analysis/": "Comprehensive reports"
+    }
+  }
+}
