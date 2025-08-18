@@ -10,6 +10,8 @@ import { Box, Text } from 'ink';
 import { ChatInterface } from './ChatInterface.js';
 import { StatusBar } from './StatusBar.js';
 import { Header } from './Header.js';
+import { hooksManager } from '../../hooks/manager.js';
+import { slashCommandRegistry, executeSlashCommand } from '../../commands/slash/registry.js';
 
 export function InteractiveApp({ 
     initialPrompt, 
@@ -26,8 +28,13 @@ export function InteractiveApp({
         startTime: Date.now()
     });
 
-    // Handle initial prompt
+    // Handle initial prompt and load slash commands
     useEffect(() => {
+        // Load slash commands on startup
+        slashCommandRegistry.loadCommands().catch(error => {
+            console.warn('Failed to load slash commands:', error.message);
+        });
+        
         if (initialPrompt) {
             handleUserMessage(initialPrompt);
         }
@@ -39,10 +46,22 @@ export function InteractiveApp({
     const handleUserMessage = useCallback(async (message) => {
         if (!message.trim()) return;
 
-        // Handle commands
+        // Handle slash commands
         if (message.startsWith('/')) {
-            await handleCommand(message);
+            await handleSlashCommand(message);
             return;
+        }
+
+        // Execute UserPromptSubmit hooks for non-command messages
+        try {
+            for await (const hookResult of hooksManager.executeUserPromptSubmitHooks(message)) {
+                if (debug && hookResult.message) {
+                    console.log(`UserPromptSubmit Hook: ${hookResult.message}`);
+                }
+            }
+        } catch (error) {
+            console.warn('UserPromptSubmit hook failed:', error.message);
+            // Continue processing despite hook failure
         }
 
         // Add user message to history
@@ -91,74 +110,82 @@ export function InteractiveApp({
     }, []);
 
     /**
-     * Handle special commands
+     * Handle slash commands using the registry
      */
-    const handleCommand = useCallback(async (command) => {
-        const cmd = command.toLowerCase().trim();
-        
-        const systemMessage = {
-            id: Date.now(),
-            role: 'system',
-            content: '',
-            timestamp: Date.now()
+    const handleSlashCommand = useCallback(async (command) => {
+        const context = {
+            model: sessionInfo.model,
+            messageCount: messages.length,
+            startTime: sessionInfo.startTime,
+            debug,
+            onExit,
+            setModel: (model) => {
+                setSessionInfo(prev => ({ ...prev, model }));
+            },
+            setDebug: (debugMode) => {
+                setSessionInfo(prev => ({ ...prev, debug: debugMode }));
+            },
+            clearMessages: () => {
+                setMessages([]);
+            },
+            getToolPermissionContext: () => ({
+                alwaysAllowRules: {},
+                // Add other permission context as needed
+            })
         };
-
-        switch (cmd) {
-            case '/help':
-                systemMessage.content = getHelpContent();
-                break;
-                
-            case '/clear':
+        
+        try {
+            const result = await executeSlashCommand(command, context);
+            
+            const systemMessage = {
+                id: Date.now(),
+                role: result.type === 'error' ? 'error' : 'system',
+                content: result.content,
+                timestamp: Date.now(),
+                ...(result.command && { command: result.command }),
+                ...(result.prompt && { prompt: result.prompt })
+            };
+            
+            // Handle special actions
+            if (result.action === 'clear') {
                 setMessages([]);
                 return;
-                
-            case '/history':
-                systemMessage.content = getHistoryContent();
-                break;
-                
-            case '/model':
-                systemMessage.content = `Current model: ${sessionInfo.model}`;
-                break;
-                
-            case '/status':
-                systemMessage.content = getStatusContent();
-                break;
-                
-            case '/debug':
-                setSessionInfo(prev => ({ ...prev, debug: !debug }));
-                systemMessage.content = `Debug mode ${debug ? 'disabled' : 'enabled'}`;
-                break;
-                
-            case '/quit':
-            case '/exit':
+            } else if (result.action === 'quit') {
                 if (onExit) {
                     onExit();
                 } else {
                     process.exit(0);
                 }
                 return;
-                
-            default:
-                systemMessage.content = `Unknown command: ${command}. Type /help for available commands.`;
+            }
+            
+            setMessages(prev => [...prev, systemMessage]);
+            
+            // If this was a custom command with a prompt, we could potentially
+            // send that prompt to Claude for processing here
+            if (result.type === 'custom_command' && result.prompt) {
+                // TODO: Optionally send the custom command prompt to Claude API
+                // This would make custom commands actually execute Claude prompts
+                console.log('Custom command prompt generated:', result.prompt);
+            }
+            
+        } catch (error) {
+            const errorMessage = {
+                id: Date.now(),
+                role: 'error',
+                content: `Command execution failed: ${error.message}`,
+                timestamp: Date.now()
+            };
+            
+            setMessages(prev => [...prev, errorMessage]);
         }
-
-        setMessages(prev => [...prev, systemMessage]);
-    }, [sessionInfo, debug, onExit, messages]);
+    }, [sessionInfo, messages, debug, onExit]);
 
     /**
-     * Get help content
+     * Get help content (now handled by slash command registry)
      */
     const getHelpContent = () => {
-        return `Available Commands:
-/help     - Show this help message
-/clear    - Clear conversation history
-/history  - Show conversation summary
-/model    - Show current model
-/status   - Show session status
-/debug    - Toggle debug mode
-/quit     - Exit Claude Code
-
-Just type your message to chat with Claude!`;
+        return slashCommandRegistry.getHelpText();
     };
 
     /**

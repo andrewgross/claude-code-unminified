@@ -10,6 +10,8 @@
 import { initializeInteractiveSession } from '../../core/sessions/interactive.js';
 import { executePrintMode } from '../../core/sessions/print.js';
 import { validateOptions } from '../../utils/validation.js';
+import { hooksManager } from '../../hooks/manager.js';
+import { getAllHookMatchers } from '../../hooks/config.js';
 
 /**
  * Main command handler - implements both interactive and print modes
@@ -19,8 +21,42 @@ import { validateOptions } from '../../utils/validation.js';
  */
 export async function mainCommand(prompt, options) {
     try {
+        // Load hook configuration
+        const hookMatchers = getAllHookMatchers();
+        hooksManager.loadHookMatchers(hookMatchers);
+        
         // Validate command line options
         const validatedOptions = await validateOptions(options);
+        
+        // Execute SessionStart hooks
+        const sessionSource = options.continue ? 'continue' : 
+                             options.resume ? 'resume' : 
+                             'new';
+        
+        try {
+            for await (const hookResult of hooksManager.executeSessionStartHooks(sessionSource)) {
+                if (options.debug && hookResult.message) {
+                    console.log(`SessionStart Hook: ${hookResult.message}`);
+                }
+            }
+        } catch (error) {
+            console.error('SessionStart hook failed:', error.message);
+            // Continue execution despite hook failure
+        }
+
+        // Execute UserPromptSubmit hooks if we have a prompt
+        if (prompt) {
+            try {
+                for await (const hookResult of hooksManager.executeUserPromptSubmitHooks(prompt)) {
+                    if (options.debug && hookResult.message) {
+                        console.log(`UserPromptSubmit Hook: ${hookResult.message}`);
+                    }
+                }
+            } catch (error) {
+                console.error('UserPromptSubmit hook failed:', error.message);
+                // Continue execution despite hook failure
+            }
+        }
         
         // Determine execution mode based on options
         if (options.print) {
