@@ -1,8 +1,9 @@
 /**
  * MCP Server Manager
  * 
- * Manages MCP server configurations and lifecycle.
+ * Manages MCP server configurations and lifecycle with enhanced scope support.
  * Handles server configurations across different scopes (local, user, project).
+ * Integrates with scope-based configuration system and project approval workflows.
  */
 
 import * as fs from 'fs';
@@ -10,6 +11,36 @@ import * as path from 'path';
 import * as os from 'os';
 import { configManager } from '../config/manager.js';
 import { McpConnectionPool } from './protocol.js';
+import { 
+    createMcpTransport, 
+    createMcpTransportSafe,
+    validateTransportConfig,
+    transportSupportsAuth,
+    isRemoteTransport,
+    TRANSPORT_TYPES,
+    TransportFactory
+} from './transports/factory.js';
+import { 
+    getAllMcpServers, 
+    findServerByName, 
+    getServersByScope,
+    getProjectServerApprovalStatus,
+    validateScope,
+    getScopeFilePath,
+    getScopeDescription,
+    MCP_SCOPES,
+    APPROVAL_STATES,
+    ScopeConfigurationManager
+} from './scopes.js';
+import { 
+    addMcpServer, 
+    removeMcpServer, 
+    validateTransportType, 
+    parseHttpHeaders,
+    McpServerManager as McpServerOperations
+} from './management.js';
+import { enhancedMcpManager } from './enhanced.js';
+import { mcpServerValidator, mcpHealthMonitor } from './validation.js';
 
 // Configuration file paths for different scopes
 const MCP_CONFIG_PATHS = {
@@ -32,6 +63,18 @@ export class McpServerManager {
         this._connectionPool = new McpConnectionPool({
             debug: options.debug
         });
+        
+        // Initialize scope configuration manager
+        this._scopeManager = new ScopeConfigurationManager();
+        this._operationsManager = new McpServerOperations();
+        
+        // Initialize transport factory for SSE and other remote transports
+        this._transportFactory = new TransportFactory();
+        
+        // Initialize enhanced features
+        this._validator = mcpServerValidator;
+        this._healthMonitor = mcpHealthMonitor;
+        this._enhancedManager = enhancedMcpManager;
         
         // Set up connection pool event handlers
         this._connectionPool.on('serverConnect', (name) => {
@@ -154,11 +197,84 @@ export class McpServerManager {
     }
     
     /**
-     * Add an MCP server configuration
+     * Add an MCP server configuration using enhanced scope system with validation
      * @param {object} serverConfig - Server configuration
      * @param {string} scope - Configuration scope (local, user, project)
      */
     async addServer(serverConfig, scope = 'local') {
+        try {
+            // Enhanced validation first
+            console.log(`🔍 Validating server configuration for '${serverConfig.name}'`);
+            const validation = this._validator.validateServerConfiguration(
+                serverConfig.name, 
+                serverConfig, 
+                scope
+            );
+            
+            if (!validation.isValid) {
+                const fatalErrors = validation.errors.filter(e => e.type === 'fatal');
+                throw new Error(`Configuration validation failed: ${fatalErrors.map(e => e.message).join(', ')}`);
+            }
+            
+            // Show warnings if any
+            if (validation.warnings.length > 0) {
+                console.warn('⚠️  Configuration warnings:');
+                validation.warnings.forEach(warning => {
+                    console.warn(`   - ${warning.message}`);
+                    if (warning.suggestion) {
+                        console.warn(`     Suggestion: ${warning.suggestion}`);
+                    }
+                });
+            }
+            
+            // Show suggestions if any
+            if (validation.suggestions.length > 0) {
+                console.log('💡 Configuration suggestions:');
+                validation.suggestions.forEach(suggestion => {
+                    console.log(`   - ${suggestion.message}`);
+                });
+            }
+            
+            // Use the enhanced scope-based management system
+            const result = await this._operationsManager.addServer(serverConfig.name, serverConfig, scope);
+            
+            if (result.success) {
+                // Clear cache to ensure fresh data
+                this.clearCache();
+                
+                console.log(result.message);
+                console.log(`   Command: ${serverConfig.command}`);
+                console.log(`   Transport: ${serverConfig.transport || 'stdio'}`);
+                
+                if (serverConfig.args && serverConfig.args.length > 0) {
+                    console.log(`   Args: [${serverConfig.args.join(', ')}]`);
+                }
+                
+                // Show scope information
+                const scopeDesc = getScopeDescription(scope);
+                console.log(`   Scope: ${scopeDesc}`);
+                
+                // Show validation metadata
+                console.log(`   Remote: ${validation.metadata.isRemote ? 'Yes' : 'No'}`);
+                console.log(`   Auth Support: ${validation.metadata.supportsAuth ? 'Yes' : 'No'}`);
+                
+                return result;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            // Fallback to legacy method if enhanced system fails
+            console.warn('Falling back to legacy add method:', error.message);
+            return this._legacyAddServer(serverConfig, scope);
+        }
+    }
+
+    /**
+     * Legacy add server method (fallback)
+     * @param {object} serverConfig - Server configuration
+     * @param {string} scope - Configuration scope
+     */
+    async _legacyAddServer(serverConfig, scope) {
         this._validateServerConfig(serverConfig);
         
         const config = this._loadConfig(scope);
@@ -195,6 +311,8 @@ export class McpServerManager {
         if (serverConfig.args && serverConfig.args.length > 0) {
             console.log(`   Args: [${serverConfig.args.join(', ')}]`);
         }
+        
+        return { success: true };
     }
     
     /**
@@ -466,6 +584,386 @@ export class McpServerManager {
     clearCache() {
         this._configCache.clear();
         this._serverCache.clear();
+    }
+    
+    // Enhanced Scope-Based Methods
+    
+    /**
+     * Get all MCP servers with scope precedence and approval filtering
+     * @returns {Object} Combined MCP server configuration from all scopes
+     */
+    getAllServersWithScopes() {
+        return getAllMcpServers();
+    }
+    
+    /**
+     * Find server by name across all scopes with precedence
+     * @param {string} serverName - Server name to find
+     * @returns {Object|null} Server configuration with scope metadata
+     */
+    findServer(serverName) {
+        return findServerByName(serverName);
+    }
+    
+    /**
+     * Get servers by specific scope
+     * @param {string} scope - Scope to retrieve servers from
+     * @returns {Object} Servers and errors for the scope
+     */
+    getServersByScope(scope) {
+        return getServersByScope(scope);
+    }
+    
+    /**
+     * Check project server approval status
+     * @param {string} serverName - Server name to check
+     * @returns {string} Approval status (pending, approved, rejected)
+     */
+    getProjectApprovalStatus(serverName) {
+        return getProjectServerApprovalStatus(serverName);
+    }
+    
+    /**
+     * Get scope file path with existence status
+     * @param {string} scope - Scope name
+     * @returns {string} File path with status
+     */
+    getScopeInfo(scope) {
+        return {
+            filePath: getScopeFilePath(scope),
+            description: getScopeDescription(scope),
+            isValid: Object.values(MCP_SCOPES).includes(scope)
+        };
+    }
+    
+    /**
+     * List servers with enhanced scope information
+     * @param {string} scope - Optional scope filter
+     * @returns {Array} List of servers with detailed scope information
+     */
+    async listServersWithScopes(scope = null) {
+        const servers = [];
+        const scopes = scope ? [scope] : Object.values(MCP_SCOPES).filter(s => s !== MCP_SCOPES.DYNAMIC);
+        
+        for (const currentScope of scopes) {
+            try {
+                const { servers: scopeServers, errors } = getServersByScope(currentScope);
+                
+                for (const [name, serverConfig] of Object.entries(scopeServers)) {
+                    const server = {
+                        name,
+                        ...serverConfig,
+                        scope: currentScope,
+                        scopeDescription: getScopeDescription(currentScope),
+                        configPath: getScopeFilePath(currentScope),
+                        status: 'configured'
+                    };
+                    
+                    // Add approval status for project servers
+                    if (currentScope === MCP_SCOPES.PROJECT) {
+                        server.approvalStatus = getProjectServerApprovalStatus(name);
+                        server.needsApproval = server.approvalStatus === APPROVAL_STATES.PENDING;
+                    }
+                    
+                    servers.push(server);
+                }
+                
+                // Log any errors
+                if (errors.length > 0) {
+                    console.warn(`Errors in ${currentScope} scope:`, errors);
+                }
+                
+            } catch (error) {
+                console.warn(`Failed to load servers from ${currentScope} scope:`, error.message);
+            }
+        }
+        
+        return servers.sort((a, b) => {
+            // Sort by scope precedence, then by name
+            const scopePriority = {
+                [MCP_SCOPES.LOCAL]: 1,
+                [MCP_SCOPES.PROJECT]: 2,
+                [MCP_SCOPES.USER]: 3
+            };
+            
+            const aPriority = scopePriority[a.scope] || 99;
+            const bPriority = scopePriority[b.scope] || 99;
+            
+            if (aPriority !== bPriority) {
+                return aPriority - bPriority;
+            }
+            
+            return a.name.localeCompare(b.name);
+        });
+    }
+    
+    /**
+     * Check server availability across scopes
+     * @param {string} serverName - Server name to check
+     * @returns {Object} Detailed availability information
+     */
+    checkServerAvailability(serverName) {
+        return this._scopeManager.checkServerAvailability(serverName);
+    }
+    
+    /**
+     * Get merged servers from all scopes (approved only)
+     * @returns {Object} All approved MCP servers
+     */
+    getMergedServers() {
+        return this._scopeManager.getMergedServers();
+    }
+    
+    /**
+     * Validate scope configuration
+     * @param {string} scope - Scope to validate
+     * @param {Object} config - Configuration to validate
+     * @returns {Array} Validation errors
+     */
+    validateScopeConfiguration(scope, config) {
+        return this._scopeManager.validateScopeConfiguration(scope, config);
+    }
+    
+    /**
+     * Start servers with scope-based filtering and enhanced transport support
+     * @param {Array} serverNames - Optional list of server names
+     * @param {string} scopeFilter - Optional scope filter
+     */
+    async startServersWithScopes(serverNames = null, scopeFilter = null) {
+        const mergedServers = this.getMergedServers();
+        const availableServers = Object.entries(mergedServers)
+            .filter(([name, config]) => {
+                // Filter by server names if specified
+                if (serverNames && !serverNames.includes(name)) {
+                    return false;
+                }
+                
+                // Filter by scope if specified
+                if (scopeFilter && config.scope !== scopeFilter) {
+                    return false;
+                }
+                
+                // Only start approved project servers
+                if (config.scope === MCP_SCOPES.PROJECT) {
+                    return getProjectServerApprovalStatus(name) === APPROVAL_STATES.APPROVED;
+                }
+                
+                return true;
+            })
+            .map(([name, config]) => ({ name, ...config }));
+        
+        const startPromises = availableServers.map(async (serverConfig) => {
+            try {
+                // Use enhanced transport creation for remote servers
+                if (isRemoteTransport(serverConfig.transport)) {
+                    console.log(`Starting ${serverConfig.transport} server: ${serverConfig.name}`);
+                    
+                    // Validate transport configuration
+                    const validationErrors = validateTransportConfig(serverConfig);
+                    if (validationErrors.length > 0) {
+                        throw new Error(`Invalid transport config: ${validationErrors.join(', ')}`);
+                    }
+                    
+                    // Create transport using factory
+                    const transportResult = await this._transportFactory.createTransport(serverConfig.name, serverConfig);
+                    if (!transportResult.success) {
+                        throw new Error(transportResult.error);
+                    }
+                    
+                    // Start the transport
+                    const transport = transportResult.transport;
+                    await transport.start();
+                    
+                    console.log(`✅ ${serverConfig.transport.toUpperCase()} server '${serverConfig.name}' started`);
+                    
+                    // Show authentication info for remote servers
+                    if (transportSupportsAuth(serverConfig.transport)) {
+                        const authStatus = transport._authProvider ? 
+                            await this._checkAuthStatus(transport._authProvider) : 'No auth';
+                        console.log(`   Auth status: ${authStatus}`);
+                    }
+                    
+                } else {
+                    // Use existing connection pool for stdio servers
+                    await this._connectionPool.addServer(serverConfig.name, {
+                        command: serverConfig.command,
+                        args: serverConfig.args,
+                        transport: serverConfig.transport || 'stdio',
+                        env: serverConfig.env
+                    });
+                }
+                
+            } catch (error) {
+                console.warn(`Warning: Failed to start MCP server '${serverConfig.name}' from ${serverConfig.scope} scope:`, error.message);
+                
+                // Show additional info for transport errors
+                if (isRemoteTransport(serverConfig.transport)) {
+                    console.warn(`   Transport: ${serverConfig.transport}`);
+                    console.warn(`   URL: ${serverConfig.url}`);
+                    if (transportSupportsAuth(serverConfig.transport)) {
+                        console.warn('   Try running authentication flow if this is an auth error');
+                    }
+                }
+            }
+        });
+        
+        await Promise.allSettled(startPromises);
+        
+        // Count connections from both transport factory and connection pool
+        const connectionPoolCount = this._connectionPool.getConnectionStatus()
+            .filter(status => status.connected).length;
+        const transportFactoryCount = this._transportFactory.listTransports()
+            .filter(transport => transport.connected).length;
+        
+        const totalConnected = connectionPoolCount + transportFactoryCount;
+        
+        console.log(`Started ${totalConnected}/${availableServers.length} MCP servers (scope-filtered)`);
+        console.log(`  - Local (stdio): ${connectionPoolCount}`);
+        console.log(`  - Remote (SSE/HTTP): ${transportFactoryCount}`);
+    }
+    
+    /**
+     * Show detailed server information including scope details
+     * @param {string} serverName - Server name
+     * @returns {Object|null} Detailed server information
+     */
+    async getServerDetails(serverName) {
+        const availability = this.checkServerAvailability(serverName);
+        
+        if (!availability.found) {
+            return null;
+        }
+        
+        const config = availability.config;
+        const connectionStatus = this._connectionPool.getConnectionStatus()
+            .find(status => status.serverName === serverName);
+        
+        return {
+            name: serverName,
+            ...config,
+            scope: availability.scope,
+            scopeDescription: getScopeDescription(availability.scope),
+            approvalStatus: availability.approvalStatus,
+            needsApproval: availability.approvalStatus === APPROVAL_STATES.PENDING,
+            connectionStatus: connectionStatus?.connected ? 'connected' : 'disconnected',
+            tools: connectionStatus?.connected ? this._connectionPool.getServerTools(serverName) : [],
+            configPath: getScopeFilePath(availability.scope)
+        };
+    }
+    
+    // Enhanced Management Methods
+    
+    /**
+     * Start enhanced monitoring with health checks and metrics
+     */
+    async startEnhancedMonitoring() {
+        console.log('🚀 Starting enhanced MCP server monitoring');
+        
+        // Start health monitoring
+        this._healthMonitor.startMonitoring();
+        
+        // Start enhanced connection manager
+        await this._enhancedManager.startEnhancedMonitoring();
+        
+        console.log('✅ Enhanced monitoring started');
+    }
+    
+    /**
+     * Stop enhanced monitoring
+     */
+    async stopEnhancedMonitoring() {
+        console.log('🛑 Stopping enhanced MCP server monitoring');
+        
+        // Stop health monitoring
+        this._healthMonitor.stopMonitoring();
+        
+        // Stop enhanced connection manager
+        await this._enhancedManager.stopEnhancedMonitoring();
+        
+        console.log('✅ Enhanced monitoring stopped');
+    }
+    
+    /**
+     * Connect servers with enhanced batch processing and monitoring
+     */
+    async connectServersEnhanced(serverNames = null, options = {}) {
+        return await this._enhancedManager.connectServersEnhanced(serverNames, options);
+    }
+    
+    /**
+     * Reconnect server with enhanced error handling and recovery
+     */
+    async reconnectServerEnhanced(serverName, options = {}) {
+        return await this._enhancedManager.reconnectServerEnhanced(serverName, options);
+    }
+    
+    /**
+     * Prefetch and cache resources from connected servers
+     */
+    async prefetchAllResources(serverNames = null) {
+        return await this._enhancedManager.prefetchAllResources(serverNames);
+    }
+    
+    /**
+     * Get comprehensive server status with health metrics
+     */
+    getEnhancedServerStatus() {
+        return this._enhancedManager.getEnhancedServerStatus();
+    }
+    
+    /**
+     * Get health monitoring status
+     */
+    getHealthStatus() {
+        return this._healthMonitor.getHealthStatus();
+    }
+    
+    /**
+     * Validate server configuration before adding
+     */
+    validateServerConfiguration(name, config, scope = 'local') {
+        return this._validator.validateServerConfiguration(name, config, scope);
+    }
+    
+    /**
+     * Get validation cache statistics
+     */
+    getValidationCacheStats() {
+        return this._validator.getCacheStats();
+    }
+    
+    /**
+     * Clear all caches (configuration, validation, etc.)
+     */
+    clearAllCaches() {
+        this.clearCache();
+        this._validator.clearCache();
+        console.log('🧹 Cleared all MCP manager caches');
+    }
+    
+    /**
+     * Get comprehensive MCP system status
+     */
+    getSystemStatus() {
+        const baseStatus = this.getConnectionStatus();
+        const enhancedStatus = this.getEnhancedServerStatus();
+        const healthStatus = this.getHealthStatus();
+        const validationStats = this.getValidationCacheStats();
+        
+        return {
+            servers: {
+                total: baseStatus.length,
+                connected: baseStatus.filter(s => s.connected).length,
+                failed: baseStatus.filter(s => !s.connected).length
+            },
+            enhanced: {
+                monitoring: healthStatus.isMonitoring,
+                monitoringInterval: healthStatus.monitoringInterval,
+                healthyServers: enhancedStatus.filter(s => s.enhancedState === 'healthy').length
+            },
+            validation: validationStats,
+            lastUpdated: new Date().toISOString()
+        };
     }
 }
 

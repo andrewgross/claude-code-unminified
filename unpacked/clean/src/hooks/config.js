@@ -87,6 +87,19 @@ export function getHookConfiguration() {
 }
 
 /**
+ * Get hooks configuration including global disableAllHooks setting
+ * 
+ * @returns {Object} Hooks configuration with settings
+ */
+export function getHooksConfig() {
+    const settings = getSettings();
+    return {
+        disableAllHooks: settings?.disableAllHooks || false,
+        configuration: getHookConfiguration()
+    };
+}
+
+/**
  * Get merged hook configuration from all sources
  * 
  * Extracted from chunk_0587.js:235-285 (uW8 function):
