@@ -5,6 +5,12 @@
 # ///
 import argparse, json, os, shutil, esprima
 
+def load_code(path):
+    s = open(path, encoding="utf-8").read()
+    if s.startswith("\ufeff"): s = s.lstrip("\ufeff")
+    if s.startswith("#!"): s = s.splitlines(True)[1:] and "".join(s.splitlines(True)[1:]) or ""
+    return s
+
 def unwrap_iife(program):
     b = program.body
     if (len(b) == 1 and getattr(b[0], "type", "") == "ExpressionStatement" and
@@ -32,8 +38,16 @@ def split_by_statements(code, stmts, max_size):
             cur.append(s); cur_size += slen
         else:
             flush(); cur, cur_start, cur_size = [s], s0, slen
-    flush()
-    return chunks
+    flush(); return chunks
+
+def parse_program(code, force_module=False):
+    if force_module:
+        return esprima.parseModule(code, range=True)
+    try:
+        return esprima.parseScript(code, range=True)
+    except Exception:
+        # fallback to module if script parse fails (import/export at top level)
+        return esprima.parseModule(code, range=True)
 
 def main():
     ap = argparse.ArgumentParser()
@@ -43,8 +57,8 @@ def main():
     ap.add_argument("--module", action="store_true")
     args = ap.parse_args()
 
-    code = open(args.input, encoding="utf-8").read()
-    program = esprima.parseModule(code, range=True) if args.module else esprima.parseScript(code, range=True)
+    code = load_code(args.input)
+    program = parse_program(code, force_module=args.module)
     body = unwrap_iife(program)
 
     out_dir = os.path.abspath(args.outdir)
