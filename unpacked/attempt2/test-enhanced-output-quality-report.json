@@ -1,0 +1,56 @@
+{
+  "timestamp": "2025-08-18T19:36:56.131Z",
+  "totalRenames": 128,
+  "qualityMetrics": {
+    "highQuality": 0,
+    "mediumQuality": 124,
+    "lowQuality": 4
+  },
+  "qualityPercentages": {
+    "highQuality": 0,
+    "mediumQuality": 97,
+    "lowQuality": 3
+  },
+  "sampleHighQualityRenames": [
+    {
+      "original": "alB",
+      "renamed": "identifier"
+    },
+    {
+      "original": "olB",
+      "renamed": "identifier"
+    },
+    {
+      "original": "G1",
+      "renamed": "identifier"
+    },
+    {
+      "original": "bj",
+      "renamed": "identifier"
+    },
+    {
+      "original": "K21",
+      "renamed": "identifier"
+    },
+    {
+      "original": "W1",
+      "renamed": "identifier"
+    },
+    {
+      "original": "Gy0",
+      "renamed": "identifier"
+    },
+    {
+      "original": "sg8",
+      "renamed": "identifier"
+    },
+    {
+      "original": "Dy0",
+      "renamed": "identifier"
+    },
+    {
+      "original": "Jy0",
+      "renamed": "identifier"
+    }
+  ]
+}
