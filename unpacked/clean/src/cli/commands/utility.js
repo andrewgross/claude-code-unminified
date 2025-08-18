@@ -8,7 +8,7 @@
  */
 
 import { Command } from 'commander';
-import { TokenManager } from '../../core/auth/token.js';
+import { tokenManager } from '../../core/auth/token.js';
 import { SystemDoctor } from '../../utils/doctor.js';
 import { UpdateManager } from '../../utils/updater.js';
 import { InstallManager } from '../../utils/installer.js';
@@ -72,9 +72,7 @@ export function utilityCommands(program) {
  */
 async function setupToken() {
     try {
-        const tokenManager = new TokenManager();
         await tokenManager.setupInteractive();
-        console.log('Token setup completed successfully');
     } catch (error) {
         console.error(`Error setting up token: ${error.message}`);
         process.exit(1);

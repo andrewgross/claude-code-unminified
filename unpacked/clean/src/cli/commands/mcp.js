@@ -8,7 +8,7 @@
  */
 
 import { Command } from 'commander';
-import { McpServerManager } from '../../mcp/manager.js';
+import { mcpServerManager } from '../../mcp/manager.js';
 import { McpServer } from '../../mcp/server.js';
 
 /**
@@ -127,7 +127,6 @@ async function serveMcp(options) {
  */
 async function addMcpServer(name, commandOrUrl, args, options) {
     try {
-        const manager = new McpServerManager();
         
         // Parse environment variables
         const env = {};
@@ -166,7 +165,7 @@ async function addMcpServer(name, commandOrUrl, args, options) {
             serverConfig.url = commandOrUrl;
         }
         
-        await manager.addServer(serverConfig, options.scope);
+        await mcpServerManager.addServer(serverConfig, options.scope);
         console.log(`Added MCP server "${name}" with ${options.transport} transport to ${options.scope} scope`);
     } catch (error) {
         console.error(`Error adding MCP server: ${error.message}`);
@@ -179,8 +178,7 @@ async function addMcpServer(name, commandOrUrl, args, options) {
  */
 async function removeMcpServer(name, options) {
     try {
-        const manager = new McpServerManager();
-        await manager.removeServer(name, options.scope);
+        await mcpServerManager.removeServer(name, options.scope);
         console.log(`Removed MCP server: ${name}`);
     } catch (error) {
         console.error(`Error removing MCP server: ${error.message}`);
@@ -193,8 +191,7 @@ async function removeMcpServer(name, options) {
  */
 async function listMcpServers() {
     try {
-        const manager = new McpServerManager();
-        const servers = await manager.listServers();
+        const servers = await mcpServerManager.listServers();
         
         if (servers.length === 0) {
             console.log('No MCP servers configured');
@@ -216,8 +213,7 @@ async function listMcpServers() {
  */
 async function getMcpServer(name) {
     try {
-        const manager = new McpServerManager();
-        const server = await manager.getServer(name);
+        const server = await mcpServerManager.getServer(name);
         
         if (!server) {
             console.log(`MCP server "${name}" not found`);
@@ -237,7 +233,6 @@ async function getMcpServer(name) {
  */
 async function addMcpServerFromJson(name, json, options) {
     try {
-        const manager = new McpServerManager();
         const config = JSON.parse(json);
         
         const serverConfig = {
@@ -245,7 +240,7 @@ async function addMcpServerFromJson(name, json, options) {
             ...config
         };
         
-        await manager.addServer(serverConfig, options.scope);
+        await mcpServerManager.addServer(serverConfig, options.scope);
         console.log(`Added MCP server "${name}" from JSON to ${options.scope} scope`);
     } catch (error) {
         console.error(`Error adding MCP server from JSON: ${error.message}`);
@@ -258,8 +253,7 @@ async function addMcpServerFromJson(name, json, options) {
  */
 async function importFromClaudeDesktop(options) {
     try {
-        const manager = new McpServerManager();
-        const importedCount = await manager.importFromClaudeDesktop(options.scope);
+        const importedCount = await mcpServerManager.importFromClaudeDesktop(options.scope);
         
         if (importedCount === 0) {
             console.log('No MCP servers found in Claude Desktop configuration');
@@ -277,8 +271,7 @@ async function importFromClaudeDesktop(options) {
  */
 async function resetProjectChoices() {
     try {
-        const manager = new McpServerManager();
-        await manager.resetProjectChoices();
+        await mcpServerManager.resetProjectChoices();
         console.log('Reset all project-scoped MCP server choices');
     } catch (error) {
         console.error(`Error resetting project choices: ${error.message}`);

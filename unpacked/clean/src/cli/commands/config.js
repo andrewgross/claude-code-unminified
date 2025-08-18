@@ -8,7 +8,7 @@
  */
 
 import { Command } from 'commander';
-import { ConfigManager } from '../../config/manager.js';
+import { configManager } from '../../config/manager.js';
 
 /**
  * Add configuration subcommands to the main program
@@ -79,8 +79,7 @@ export function configCommands(program) {
  */
 async function getConfigValue(key, options) {
     try {
-        const configManager = new ConfigManager();
-        const value = await configManager.get(key, options.global);
+        const value = configManager.get(key, options.global);
         
         if (value !== undefined) {
             if (typeof value === 'object') {
@@ -103,8 +102,6 @@ async function getConfigValue(key, options) {
  */
 async function setConfigValue(key, value, options) {
     try {
-        const configManager = new ConfigManager();
-        
         // Attempt to parse JSON values
         let parsedValue = value;
         if (value.startsWith('{') || value.startsWith('[') || value === 'true' || value === 'false' || !isNaN(value)) {
@@ -128,12 +125,17 @@ async function setConfigValue(key, value, options) {
  */
 async function removeConfigValue(key, values, options) {
     try {
-        const configManager = new ConfigManager();
-        
         if (values && values.length > 0) {
             // Remove specific items from array
-            await configManager.removeFromArray(key, values, options.global);
-            console.log(`Removed items from ${options.global ? 'global' : 'local'} config array "${key}": ${values.join(', ')}`);
+            const currentValue = configManager.get(key, options.global);
+            if (Array.isArray(currentValue)) {
+                const newArray = currentValue.filter(item => !values.includes(item));
+                await configManager.set(key, newArray, options.global);
+                console.log(`Removed items from ${options.global ? 'global' : 'local'} config array "${key}": ${values.join(', ')}`);
+            } else {
+                console.log(`Config key "${key}" is not an array or does not exist`);
+                process.exit(1);
+            }
         } else {
             // Remove entire key
             await configManager.remove(key, options.global);
@@ -150,8 +152,7 @@ async function removeConfigValue(key, values, options) {
  */
 async function listConfigValues(options) {
     try {
-        const configManager = new ConfigManager();
-        const config = await configManager.getAll(options.global);
+        const config = configManager.list(options.global);
         
         if (Object.keys(config).length === 0) {
             console.log(`No ${options.global ? 'global' : 'local'} configuration values found`);
@@ -171,14 +172,12 @@ async function listConfigValues(options) {
  */
 async function addConfigValues(key, values, options) {
     try {
-        const configManager = new ConfigManager();
-        
         // Parse comma-separated values
         const parsedValues = values.flatMap(value => 
             value.includes(',') ? value.split(',') : [value]
         ).map(value => value.trim()).filter(Boolean);
         
-        await configManager.addToArray(key, parsedValues, options.global);
+        await configManager.add(key, parsedValues, options.global);
         console.log(`Added to ${options.global ? 'global' : 'local'} config array "${key}": ${parsedValues.join(', ')}`);
     } catch (error) {
         console.error(`Error adding config values: ${error.message}`);

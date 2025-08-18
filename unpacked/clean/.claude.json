@@ -1,0 +1,13 @@
+{
+  "theme": "light",
+  "mcp": {
+    "servers": {
+      "example": {
+        "command": "node",
+        "args": [
+          "server.js"
+        ]
+      }
+    }
+  }
+}
