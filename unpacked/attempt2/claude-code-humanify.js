@@ -111,7 +111,7 @@ class ClaudeCodeHumanifier extends ContextualHumanifier {
    */
   async generateNamesWithClaudeCode(identifiers) {
     const allRenames = new Map();
-    const batchSize = 10; // Smaller batches for better context
+    const batchSize = 3; // Very small batches to avoid timeouts
     
     console.log(`📦 Processing ${Math.ceil(identifiers.length / batchSize)} batches with Claude Code`);
     
@@ -162,37 +162,25 @@ class ClaudeCodeHumanifier extends ContextualHumanifier {
     // Generate enhanced prompt
     const prompt = this.promptDemo.generateEnhancedPrompt(batch, this.projectDescription);
     
-    // Create temporary prompt file
-    const promptFile = path.join(process.cwd(), `temp-prompt-${batchIndex}.txt`);
-    fs.writeFileSync(promptFile, prompt);
+    // Call Claude Code directly with prompt text
+    const response = await this.callClaudeCode(prompt);
     
-    try {
-      // Call Claude Code with the prompt
-      const response = await this.callClaudeCode(promptFile);
-      
-      // Parse response
-      const renames = this.parseLLMResponse(response, batch);
-      
-      return renames;
-      
-    } finally {
-      // Clean up temp file
-      if (fs.existsSync(promptFile)) {
-        fs.unlinkSync(promptFile);
-      }
-    }
+    // Parse response
+    const renames = this.parseLLMResponse(response, batch);
+    
+    return renames;
   }
 
   /**
-   * Call Claude Code CLI with prompt file
+   * Call Claude Code CLI with prompt text
    */
-  async callClaudeCode(promptFile) {
+  async callClaudeCode(promptText) {
     return new Promise((resolve, reject) => {
       let output = '';
       let errorOutput = '';
       
-      // Use claude -p to process the prompt file
-      const claude = spawn('claude', ['-p', promptFile], {
+      // Use claude -p with prompt text directly
+      const claude = spawn('claude', ['-p', promptText], {
         stdio: 'pipe',
         cwd: process.cwd()
       });
@@ -217,11 +205,11 @@ class ClaudeCodeHumanifier extends ContextualHumanifier {
         reject(new Error(`Failed to spawn Claude Code CLI: ${error.message}`));
       });
       
-      // Timeout after 60 seconds
+      // Timeout after 3 minutes
       setTimeout(() => {
         claude.kill();
         reject(new Error('Claude Code CLI timeout'));
-      }, 60000);
+      }, 180000);
     });
   }
 

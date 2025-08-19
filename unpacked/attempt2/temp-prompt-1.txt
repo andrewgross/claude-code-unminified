@@ -1,0 +1,270 @@
+You are an expert JavaScript developer helping to humanize minified code for a A chunk of claude code cli js.
+
+Your task is to generate meaningful, descriptive names that immediately convey purpose and fit the project context.
+
+IDENTIFIERS TO RENAME:
+
+1. IDENTIFIER: "xtB" (function)
+
+   DEFINITION:
+   {
+   
+   DATA FLOW: Unknown data flow
+   
+   USAGE ANALYSIS (1 total references):
+      - Reassigned
+   
+   FUNCTION IMPLEMENTATION:
+   {return Qy0(By0.statSync(A),A,B);} [2 calls, returns]
+   
+   RELATIONSHIPS:
+   - Calls functions: W1, _tB, if
+   - Works with variables: none detected
+   
+   SEMANTIC CONTEXT:
+   - Detected patterns: none
+   - Scope: FunctionDeclaration (2 bindings)
+   - Function context: anonymous
+   
+   SUGGESTED NAME: ?
+
+2. IDENTIFIER: "Jy0" (variable)
+
+   DEFINITION:
+   var Jy0 = E((rg8, Wy0) => {
+   
+   DATA FLOW: Result of calling E()
+   
+   USAGE ANALYSIS (1 total references):
+      - Called with 0 arguments
+   
+   FUNCTION IMPLEMENTATION:
+   Not a function / body not available
+   
+   RELATIONSHIPS:
+   - Calls functions: W1, if, Gy0
+   - Works with variables: none detected
+   
+   SEMANTIC CONTEXT:
+   - Detected patterns: none
+   - Scope: Program (29 bindings)
+   - Function context: anonymous
+   
+   SUGGESTED NAME: ?
+
+3. IDENTIFIER: "Fy0" (variable)
+
+   DEFINITION:
+   var Fy0 = W1("fs");
+   
+   DATA FLOW: Result of calling W1()
+   
+   USAGE ANALYSIS (2 total references):
+      - Property access: .stat
+   - Property access: .statSync
+   
+   FUNCTION IMPLEMENTATION:
+   Not a function / body not available
+   
+   RELATIONSHIPS:
+   - Calls functions: Iy0, stat, function
+   - Works with variables: none detected
+   
+   SEMANTIC CONTEXT:
+   - Detected patterns: file_system
+   - Scope: ArrowFunctionExpression (7 bindings)
+   - Function context: anonymous
+   
+   SUGGESTED NAME: ?
+
+4. IDENTIFIER: "Iy0" (function)
+
+   DEFINITION:
+   {
+   
+   DATA FLOW: Unknown data flow
+   
+   USAGE ANALYSIS (2 total references):
+      - Reassigned
+   - Property access: .sync
+   
+   FUNCTION IMPLEMENTATION:
+   {Fy0.stat(A,function(Z,D){Q(Z,Z?!1:Yy0(D,B));});} [4 calls, void]
+   
+   RELATIONSHIPS:
+   - Calls functions: W1, Iy0, stat
+   - Works with variables: none detected
+   
+   SEMANTIC CONTEXT:
+   - Detected patterns: none
+   - Scope: FunctionDeclaration (3 bindings)
+   - Function context: anonymous
+   
+   SUGGESTED NAME: ?
+
+5. IDENTIFIER: "vtB" (function)
+
+   DEFINITION:
+   {
+   
+   DATA FLOW: Unknown data flow
+   
+   USAGE ANALYSIS (1 total references):
+      - Reassigned
+   
+   FUNCTION IMPLEMENTATION:
+   {return Yy0(Fy0.statSync(A),B);} [2 calls, returns]
+   
+   RELATIONSHIPS:
+   - Calls functions: W1, Iy0, stat
+   - Works with variables: none detected
+   
+   SEMANTIC CONTEXT:
+   - Detected patterns: none
+   - Scope: FunctionDeclaration (2 bindings)
+   - Function context: anonymous
+   
+   SUGGESTED NAME: ?
+
+6. IDENTIFIER: "Yy0" (function)
+
+   DEFINITION:
+   {
+   
+   DATA FLOW: Unknown data flow
+   
+   USAGE ANALYSIS (2 total references):
+      - Called with 2 arguments
+   
+   FUNCTION IMPLEMENTATION:
+   {return A.isFile()&&btB(A,B);} [2 calls, returns]
+   
+   RELATIONSHIPS:
+   - Calls functions: function, Q, Yy0
+   - Works with variables: D, B
+   
+   SEMANTIC CONTEXT:
+   - Detected patterns: none
+   - Scope: FunctionDeclaration (2 bindings)
+   - Function context: anonymous
+   
+   SUGGESTED NAME: ?
+
+7. IDENTIFIER: "btB" (function)
+
+   DEFINITION:
+   {
+   
+   DATA FLOW: Unknown data flow
+   
+   USAGE ANALYSIS (1 total references):
+      - Called with 2 arguments
+   
+   FUNCTION IMPLEMENTATION:
+   {var{mode:Q,uid:Z,gid:D}=A,G=B.uid!==void 0?B.uid:process.getuid&&process.getuid(),F=B.gid!==void 0?B.gid:process.getgid&&process.getgid(),I=parseInt(... [5 calls, returns]
+   
+   RELATIONSHIPS:
+   - Calls functions: Yy0, isFile, btB
+   - Works with variables: A, B
+   
+   SEMANTIC CONTEXT:
+   - Detected patterns: none
+   - Scope: FunctionDeclaration (12 bindings)
+   - Function context: anonymous
+   
+   SUGGESTED NAME: ?
+
+8. IDENTIFIER: "Vy0" (variable)
+
+   DEFINITION:
+   var Vy0 = E((tg8, Xy0) => {
+   
+   DATA FLOW: Result of calling E()
+   
+   USAGE ANALYSIS (1 total references):
+      - Called with 0 arguments
+   
+   FUNCTION IMPLEMENTATION:
+   Not a function / body not available
+   
+   RELATIONSHIPS:
+   - Calls functions: W1, Vy0, assign
+   - Works with variables: none detected
+   
+   SEMANTIC CONTEXT:
+   - Detected patterns: none
+   - Scope: Program (29 bindings)
+   - Function context: anonymous
+   
+   SUGGESTED NAME: ?
+
+9. IDENTIFIER: "og8" (variable)
+
+   DEFINITION:
+   var og8 = W1("fs"),
+   
+   DATA FLOW: Result of calling W1()
+   
+   USAGE ANALYSIS (0 total references):
+   
+   
+   FUNCTION IMPLEMENTATION:
+   Not a function / body not available
+   
+   RELATIONSHIPS:
+   - Calls functions: none detected
+   - Works with variables: none detected
+   
+   SEMANTIC CONTEXT:
+   - Detected patterns: file_system
+   - Scope: ArrowFunctionExpression (6 bindings)
+   - Function context: anonymous
+   
+   SUGGESTED NAME: ?
+
+10. IDENTIFIER: "lW1" (variable)
+
+   DEFINITION:
+   var og8 = W1("fs"),
+   
+   DATA FLOW: Unknown data flow
+   
+   USAGE ANALYSIS (2 total references):
+      - Called with 3 arguments
+   - Property access: .sync
+   
+   FUNCTION IMPLEMENTATION:
+   Not a function / body not available
+   
+   RELATIONSHIPS:
+   - Calls functions: Mm1, if, TypeError
+   - Works with variables: A
+   
+   SEMANTIC CONTEXT:
+   - Detected patterns: file_system
+   - Scope: ArrowFunctionExpression (6 bindings)
+   - Function context: anonymous
+   
+   SUGGESTED NAME: ?
+
+NAMING STRATEGY:
+1. CONTEXT-DRIVEN: Base name on HOW it's used, not just WHAT it is
+2. PROJECT-AWARE: Consider this is A chunk of claude code cli js
+3. RELATIONSHIP-AWARE: Consider its role relative to other functions/variables
+4. SEMANTIC CLARITY: Name should be immediately understandable
+5. CONSISTENCY: Follow patterns from existing names
+
+QUALITY EXAMPLES:
+✅ parseCliArguments (processes command line arguments)
+✅ validateConfigSchema (validates configuration object structure)  
+✅ generateOutputReport (creates and formats output reports)
+✅ handleFileSystemError (manages file system operation errors)
+
+❌ AVOID: dataProcessor, handlerFunction, utilityMethod, configObject
+
+Focus on the SPECIFIC PURPOSE within the A chunk of claude code cli js context.
+
+Respond with ONLY the names, one per line:
+1. specificDescriptiveName1
+2. specificDescriptiveName2
+...
