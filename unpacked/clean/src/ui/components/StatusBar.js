@@ -29,37 +29,33 @@ export function StatusBar({ messageCount, isProcessing, model }) {
         return `${heapMB}/${totalMB}MB`;
     };
 
-    return (
-        <Box flexDirection="column" marginTop={1}>
-            <Box>
-                <Text dimColor>
-                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                </Text>
-            </Box>
+    return React.createElement(Box, { flexDirection: "column", marginTop: 1 },
+        React.createElement(Box, null,
+            React.createElement(Text, { dimColor: true },
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            )
+        ),
+        
+        React.createElement(Box, { justifyContent: "space-between" },
+            React.createElement(Box, null,
+                React.createElement(Text, { dimColor: true },
+                    `💬 ${messageCount} messages`
+                ),
+                React.createElement(Text, { dimColor: true }, " • "),
+                React.createElement(Text, { dimColor: true },
+                    `🧠 ${getMemoryInfo()}`
+                ),
+                isProcessing && [
+                    React.createElement(Text, { dimColor: true, key: "separator" }, " • "),
+                    React.createElement(Text, { color: "yellow", key: "processing" },
+                        "⏳ Processing..."
+                    )
+                ]
+            ),
             
-            <Box justifyContent="space-between">
-                <Box>
-                    <Text dimColor>
-                        💬 {messageCount} messages
-                    </Text>
-                    <Text dimColor> • </Text>
-                    <Text dimColor>
-                        🧠 {getMemoryInfo()}
-                    </Text>
-                    {isProcessing && (
-                        <>
-                            <Text dimColor> • </Text>
-                            <Text color="yellow">
-                                ⏳ Processing...
-                            </Text>
-                        </>
-                    )}
-                </Box>
-                
-                <Text dimColor>
-                    {currentTime.toLocaleTimeString()} • /help for commands • Ctrl+C to exit
-                </Text>
-            </Box>
-        </Box>
+            React.createElement(Text, { dimColor: true },
+                `${currentTime.toLocaleTimeString()} • /help for commands • Ctrl+C to exit`
+            )
+        )
     );
 }

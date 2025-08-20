@@ -13,7 +13,6 @@
  */
 
 import { EventEmitter } from 'events';
-import { mcpServerManager } from './manager.js';
 import { getAllMcpServers, findServerByName, MCP_SCOPES, APPROVAL_STATES } from './scopes.js';
 import { isRemoteTransport, transportSupportsAuth, validateTransportConfig } from './transports/factory.js';
 
@@ -28,10 +27,10 @@ import { isRemoteTransport, transportSupportsAuth, validateTransportConfig } fro
  * - Performance metrics and logging
  */
 export class EnhancedMcpManager extends EventEmitter {
-    constructor(options = {}) {
+    constructor(baseManager = null, options = {}) {
         super();
         
-        this._baseManager = mcpServerManager;
+        this._baseManager = baseManager;
         this._connectionMetrics = new Map();
         this._reconnectionTimers = new Map();
         this._healthCheckInterval = options.healthCheckInterval || 30000;
@@ -54,6 +53,11 @@ export class EnhancedMcpManager extends EventEmitter {
      * Set up event handlers for connection monitoring
      */
     _setupEventHandlers() {
+        // Only set up handlers if we have a base manager
+        if (!this._baseManager) {
+            return;
+        }
+        
         // Listen to base manager events
         this._baseManager._connectionPool.on('serverConnect', (name) => {
             this._updateConnectionState(name, 'connected');
@@ -686,5 +690,6 @@ export class EnhancedMcpManager extends EventEmitter {
     }
 }
 
-// Export singleton instance
-export const enhancedMcpManager = new EnhancedMcpManager();
+// Export class for manager.js to instantiate
+// (singleton instance will be created in manager.js to avoid circular dependency)
+export let enhancedMcpManager = null;

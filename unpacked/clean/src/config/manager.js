@@ -252,6 +252,52 @@ export class SettingsManager {
     }
 
     /**
+     * Set a configuration value
+     * 
+     * @param {string} key - Configuration key
+     * @param {*} value - Value to set
+     * @param {boolean} global - Whether to save globally
+     */
+    async set(key, value, global = false) {
+        // For now, just log that this would set the value
+        // In a full implementation, this would write to config files
+        console.log(`Would set ${key} = ${JSON.stringify(value)} (global: ${global})`);
+        throw new Error('Configuration writing not yet implemented - settings are read-only');
+    }
+    
+    /**
+     * Remove a configuration value
+     * 
+     * @param {string} key - Configuration key
+     * @param {boolean} global - Whether to remove globally
+     */
+    async remove(key, global = false) {
+        console.log(`Would remove ${key} (global: ${global})`);
+        throw new Error('Configuration writing not yet implemented - settings are read-only');
+    }
+    
+    /**
+     * Add values to a configuration array
+     * 
+     * @param {string} key - Configuration key
+     * @param {Array} values - Values to add
+     * @param {boolean} global - Whether to modify globally
+     */
+    async add(key, values, global = false) {
+        console.log(`Would add ${JSON.stringify(values)} to ${key} (global: ${global})`);
+        throw new Error('Configuration writing not yet implemented - settings are read-only');
+    }
+
+    /**
+     * List all configuration settings (alias for get())
+     * 
+     * @returns {Object} All current settings
+     */
+    list() {
+        return this.get();
+    }
+
+    /**
      * Export current settings (excluding sensitive data)
      * 
      * @returns {Object} Exportable settings
@@ -306,6 +352,9 @@ export class SettingsManager {
 
 // Export singleton instance
 export const settingsManager = new SettingsManager();
+
+// Export alias for backward compatibility
+export const configManager = settingsManager;
 
 // Export the settings getter as default for backward compatibility
 export { getCachedSettings as default };

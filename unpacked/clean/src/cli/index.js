@@ -27,6 +27,7 @@ export async function createCLI() {
         .name('claude')
         .description('Claude Code - starts an interactive session by default, use -p/--print for non-interactive output')
         .argument('[prompt]', 'Your prompt', String)
+        .version('1.0.0', '-v, --version', 'Display version number')
         .helpOption('-h, --help', 'Display help for command');
 
     // Global options

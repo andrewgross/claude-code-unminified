@@ -91,7 +91,7 @@ export function TextInput({
      */
     const renderInputWithCursor = () => {
         if (!value && !isActive) {
-            return <Text dimColor>{placeholder}</Text>;
+            return React.createElement(Text, { dimColor: true }, placeholder);
         }
 
         return lines.map((line, lineIndex) => {
@@ -101,43 +101,35 @@ export function TextInput({
                 const atCursor = line.slice(currentLinePosition, currentLinePosition + 1) || ' ';
                 const afterCursor = line.slice(currentLinePosition + 1);
 
-                return (
-                    <Text key={lineIndex}>
-                        {beforeCursor}
-                        <Text inverse>{atCursor}</Text>
-                        {afterCursor}
-                        {lineIndex < lines.length - 1 && '\n'}
-                    </Text>
+                return React.createElement(Text, { key: lineIndex },
+                    beforeCursor,
+                    React.createElement(Text, { inverse: true }, atCursor),
+                    afterCursor,
+                    lineIndex < lines.length - 1 ? '\n' : ''
                 );
             } else {
-                return (
-                    <Text key={lineIndex}>
-                        {line}
-                        {lineIndex < lines.length - 1 && '\n'}
-                    </Text>
+                return React.createElement(Text, { key: lineIndex },
+                    line,
+                    lineIndex < lines.length - 1 ? '\n' : ''
                 );
             }
         });
     };
 
-    return (
-        <Box flexDirection="column">
-            <Box>
-                <Text color={disabled ? 'gray' : 'white'}>
-                    💬{' '}
-                </Text>
-                <Box flexGrow={1}>
-                    {renderInputWithCursor()}
-                </Box>
-            </Box>
-            
-            {multiline && (
-                <Box marginTop={1}>
-                    <Text dimColor>
-                        Press Shift+Enter for newline, Enter to send
-                    </Text>
-                </Box>
-            )}
-        </Box>
+    return React.createElement(Box, { flexDirection: "column" },
+        React.createElement(Box, null,
+            React.createElement(Text, { color: disabled ? 'gray' : 'white' },
+                "💬 "
+            ),
+            React.createElement(Box, { flexGrow: 1 },
+                ...renderInputWithCursor()
+            )
+        ),
+        
+        multiline && React.createElement(Box, { marginTop: 1 },
+            React.createElement(Text, { dimColor: true },
+                "Press Shift+Enter for newline, Enter to send"
+            )
+        )
     );
 }

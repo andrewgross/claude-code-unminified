@@ -244,28 +244,26 @@ export function InteractiveApp({
         };
     };
 
-    return (
-        <Box flexDirection="column" height="100%">
-            <Header 
-                model={sessionInfo.model}
-                messageCount={sessionInfo.messageCount}
-                debug={debug}
-            />
-            
-            <Box flexGrow={1} flexDirection="column">
-                <ChatInterface
-                    messages={messages}
-                    isProcessing={isProcessing}
-                    onMessage={handleUserMessage}
-                    debug={debug}
-                />
-            </Box>
+    return React.createElement(Box, { flexDirection: "column", height: "100%" },
+        React.createElement(Header, {
+            model: sessionInfo.model,
+            messageCount: sessionInfo.messageCount,
+            debug: debug
+        }),
+        
+        React.createElement(Box, { flexGrow: 1, flexDirection: "column" },
+            React.createElement(ChatInterface, {
+                messages: messages,
+                isProcessing: isProcessing,
+                onMessage: handleUserMessage,
+                debug: debug
+            })
+        ),
 
-            <StatusBar
-                messageCount={messages.length}
-                isProcessing={isProcessing}
-                model={sessionInfo.model}
-            />
-        </Box>
+        React.createElement(StatusBar, {
+            messageCount: messages.length,
+            isProcessing: isProcessing,
+            model: sessionInfo.model
+        })
     );
 }

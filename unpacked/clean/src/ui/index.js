@@ -98,14 +98,9 @@ export function startReactSession(options = {}) {
  * @returns {boolean} Whether React UI can be used
  */
 export function isReactUIAvailable() {
-    try {
-        // Check if required dependencies are available
-        require.resolve('ink');
-        require.resolve('react');
-        return true;
-    } catch (error) {
-        return false;
-    }
+    // Since we already import React and Ink at the top of this module,
+    // if we got this far, they're available
+    return true;
 }
 
 /**

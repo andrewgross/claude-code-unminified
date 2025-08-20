@@ -10,7 +10,7 @@ import { tokenManager } from '../auth/token.js';
 import { configManager } from '../../config/manager.js';
 import { claudeAPIClient } from '../api/client.js';
 import { sessionPersistence } from './persistence.js';
-// import { startReactSession, isReactUIAvailable, getUICapabilities } from '../../ui/index.js';
+import { startReactSession, isReactUIAvailable, getUICapabilities } from '../../ui/index.js';
 
 /**
  * Initialize an interactive session with Claude
@@ -31,16 +31,38 @@ export async function initializeInteractiveSession(initialPrompt, options) {
     const config = configManager.list();
     const model = options.model || config.model || 'claude-3-5-sonnet-20241022';
     
-    // React UI is disabled for now (JSX compilation needed)
-    // TODO: Set up JSX compilation or rewrite components with React.createElement
-    if (options.debug) {
-        console.log('React UI framework available but JSX compilation needed\n');
-    }
-    
     // Handle session resumption
     let resumeSession = null;
     if (options.continue || options.resume) {
         resumeSession = await handleSessionResumption(options);
+    }
+    
+    // Try React UI first, fallback to simple terminal interface
+    if (isReactUIAvailable()) {
+        if (options.debug) {
+            console.log('Starting React-based interactive session...\n');
+        }
+        
+        const sessionManager = startReactSession({
+            initialPrompt,
+            model,
+            debug: options.debug,
+            verbose: options.verbose,
+            sessionId: options.sessionId,
+            resumeSession
+        });
+        
+        if (sessionManager) {
+            // Wait for the React session to complete
+            await sessionManager.waitForExit();
+            return;
+        } else {
+            console.log('React UI failed to start, falling back to simple terminal...\n');
+        }
+    } else {
+        if (options.debug) {
+            console.log('React UI not available, using simple terminal interface...\n');
+        }
     }
     
     // Fallback to simple terminal interface

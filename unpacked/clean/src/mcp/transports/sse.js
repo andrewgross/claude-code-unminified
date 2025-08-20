@@ -10,7 +10,7 @@
  * - chunk_0584.js:4-36 (SSE connection setup in z01 function)
  */
 
-import EventSource from 'eventsource'; // Node.js EventSource implementation
+import EventSource from '../../polyfills/EventSource.js'; // Internal EventSource polyfill
 import { OAuthAuthProvider } from './auth.js';
 
 /**

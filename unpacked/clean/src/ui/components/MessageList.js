@@ -54,38 +54,34 @@ export function MessageList({ messages, isProcessing, debug = false }) {
         const style = getMessageStyle(message.role);
         const showTimestamp = debug || message.role === 'error';
 
-        return (
-            <Box key={message.id || index} flexDirection="column" marginBottom={1}>
-                <Box>
-                    <Text color={style.color} bold>
-                        {style.prefix}
-                    </Text>
-                    {showTimestamp && (
-                        <Text dimColor>
-                            {' '}[{formatTime(message.timestamp)}]
-                        </Text>
-                    )}
-                </Box>
-                
-                <Box marginLeft={2}>
-                    <Text>
-                        {message.content.split('\n').map((line, lineIndex) => (
-                            <React.Fragment key={lineIndex}>
-                                {lineIndex > 0 && <Newline />}
-                                {line}
-                            </React.Fragment>
-                        ))}
-                    </Text>
-                </Box>
-                
-                {debug && message.usage && (
-                    <Box marginLeft={2} marginTop={1}>
-                        <Text dimColor>
-                            Tokens: {message.usage.input_tokens}↑ {message.usage.output_tokens}↓
-                        </Text>
-                    </Box>
-                )}
-            </Box>
+        return React.createElement(Box, { 
+            key: message.id || index, 
+            flexDirection: "column", 
+            marginBottom: 1 
+        },
+            React.createElement(Box, null,
+                React.createElement(Text, { color: style.color, bold: true },
+                    style.prefix
+                ),
+                showTimestamp && React.createElement(Text, { dimColor: true },
+                    ` [${formatTime(message.timestamp)}]`
+                )
+            ),
+            
+            React.createElement(Box, { marginLeft: 2 },
+                React.createElement(Text, null,
+                    ...message.content.split('\n').map((line, lineIndex) => [
+                        lineIndex > 0 && React.createElement(Newline, { key: `newline-${lineIndex}` }),
+                        line
+                    ]).flat().filter(Boolean)
+                )
+            ),
+            
+            debug && message.usage && React.createElement(Box, { marginLeft: 2, marginTop: 1 },
+                React.createElement(Text, { dimColor: true },
+                    `Tokens: ${message.usage.input_tokens}↑ ${message.usage.output_tokens}↓`
+                )
+            )
         );
     };
 
@@ -95,47 +91,41 @@ export function MessageList({ messages, isProcessing, debug = false }) {
     const renderProcessingIndicator = () => {
         if (!isProcessing) return null;
 
-        return (
-            <Box marginBottom={1}>
-                <Text color="cyan" bold>
-                    🤖 Claude
-                </Text>
-                <Box marginLeft={2}>
-                    <Text dimColor>
-                        🤔 Thinking...
-                    </Text>
-                </Box>
-            </Box>
+        return React.createElement(Box, { marginBottom: 1 },
+            React.createElement(Text, { color: "cyan", bold: true },
+                "🤖 Claude"
+            ),
+            React.createElement(Box, { marginLeft: 2 },
+                React.createElement(Text, { dimColor: true },
+                    "🤔 Thinking..."
+                )
+            )
         );
     };
 
-    return (
-        <Box flexDirection="column">
-            {messages.length === 0 ? (
-                <Box>
-                    <Text dimColor>
-                        🎉 Welcome to Claude Code Interactive Session!
-                        <Newline />
-                        <Newline />
-                        • Type your message and press Enter to chat with Claude
-                        <Newline />
-                        • Use /help to see available commands  
-                        <Newline />
-                        • Use ↑↓ arrows to navigate input history
-                        <Newline />
-                        • Press Ctrl+C to exit anytime
-                        <Newline />
-                        <Newline />
-                        Ready to help! What would you like to know?
-                    </Text>
-                </Box>
-            ) : (
-                <>
-                    {messages.map(renderMessage)}
-                    {renderProcessingIndicator()}
-                </>
-            )}
-            <div ref={messagesEndRef} />
-        </Box>
+    return React.createElement(Box, { flexDirection: "column" },
+        messages.length === 0 ? 
+            React.createElement(Box, null,
+                React.createElement(Text, { dimColor: true },
+                    "🎉 Welcome to Claude Code Interactive Session!",
+                    React.createElement(Newline),
+                    React.createElement(Newline),
+                    "• Type your message and press Enter to chat with Claude",
+                    React.createElement(Newline),
+                    "• Use /help to see available commands",
+                    React.createElement(Newline),
+                    "• Use ↑↓ arrows to navigate input history",
+                    React.createElement(Newline),
+                    "• Press Ctrl+C to exit anytime",
+                    React.createElement(Newline),
+                    React.createElement(Newline),
+                    "Ready to help! What would you like to know?"
+                )
+            ) :
+            [
+                ...messages.map(renderMessage),
+                renderProcessingIndicator()
+            ].filter(Boolean),
+        React.createElement('div', { ref: messagesEndRef })
     );
 }

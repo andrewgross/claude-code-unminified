@@ -82,41 +82,37 @@ export function ChatInterface({
         setHistoryIndex(-1);
     };
 
-    return (
-        <Box flexDirection="column" height="100%">
-            {/* Message display area */}
-            <Box flexGrow={1} flexDirection="column" marginBottom={1}>
-                <MessageList 
-                    messages={messages} 
-                    isProcessing={isProcessing}
-                    debug={debug}
-                />
-            </Box>
+    return React.createElement(Box, { flexDirection: "column", height: "100%" },
+        // Message display area
+        React.createElement(Box, { flexGrow: 1, flexDirection: "column", marginBottom: 1 },
+            React.createElement(MessageList, {
+                messages: messages,
+                isProcessing: isProcessing,
+                debug: debug
+            })
+        ),
 
-            {/* Input area */}
-            <Box flexDirection="column">
-                <Box marginBottom={1}>
-                    <Text dimColor>
-                        💡 Type your message and press Enter. Use ↑↓ for history, Ctrl+C to exit
-                    </Text>
-                </Box>
-                
-                <TextInput
-                    value={inputValue}
-                    onChange={handleChange}
-                    onSubmit={handleSubmit}
-                    placeholder={isProcessing ? "Claude is thinking..." : "Type your message..."}
-                    disabled={isProcessing}
-                />
-                
-                {debug && (
-                    <Box marginTop={1}>
-                        <Text dimColor>
-                            Debug: {inputHistory.length} in history, index: {historyIndex}
-                        </Text>
-                    </Box>
-                )}
-            </Box>
-        </Box>
+        // Input area
+        React.createElement(Box, { flexDirection: "column" },
+            React.createElement(Box, { marginBottom: 1 },
+                React.createElement(Text, { dimColor: true },
+                    "💡 Type your message and press Enter. Use ↑↓ for history, Ctrl+C to exit"
+                )
+            ),
+            
+            React.createElement(TextInput, {
+                value: inputValue,
+                onChange: handleChange,
+                onSubmit: handleSubmit,
+                placeholder: isProcessing ? "Claude is thinking..." : "Type your message...",
+                disabled: isProcessing
+            }),
+            
+            debug && React.createElement(Box, { marginTop: 1 },
+                React.createElement(Text, { dimColor: true },
+                    `Debug: ${inputHistory.length} in history, index: ${historyIndex}`
+                )
+            )
+        )
     );
 }

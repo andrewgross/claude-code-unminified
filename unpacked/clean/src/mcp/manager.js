@@ -39,7 +39,7 @@ import {
     parseHttpHeaders,
     McpServerManager as McpServerOperations
 } from './management.js';
-import { enhancedMcpManager } from './enhanced.js';
+import { EnhancedMcpManager } from './enhanced.js';
 import { mcpServerValidator, mcpHealthMonitor } from './validation.js';
 
 // Configuration file paths for different scopes
@@ -74,7 +74,7 @@ export class McpServerManager {
         // Initialize enhanced features
         this._validator = mcpServerValidator;
         this._healthMonitor = mcpHealthMonitor;
-        this._enhancedManager = enhancedMcpManager;
+        this._enhancedManager = new EnhancedMcpManager(this);
         
         // Set up connection pool event handlers
         this._connectionPool.on('serverConnect', (name) => {

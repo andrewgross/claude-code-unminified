@@ -203,12 +203,33 @@ function getMCPServerConfig(scope) {
         }
         
         case 'user': {
-            // User MCP servers would come from main settings
-            const userSettings = getCachedSettings();
-            return {
-                servers: userSettings.mcpServers || {},
-                errors: []
-            };
+            // User MCP servers would come from main settings file
+            const userSettingsPath = join(homedir(), '.claude', 'settings.json');
+            if (!existsSync(userSettingsPath)) {
+                return {
+                    servers: {},
+                    errors: []
+                };
+            }
+            
+            try {
+                const content = readFileSync(userSettingsPath, { encoding: 'utf8' });
+                const config = parseJSON(content);
+                return {
+                    servers: config?.mcpServers || {},
+                    errors: []
+                };
+            } catch (error) {
+                return {
+                    servers: {},
+                    errors: [{
+                        file: userSettingsPath,
+                        path: 'mcpServers',
+                        message: `Failed to load user MCP config: ${error.message}`,
+                        type: 'mcp_error'
+                    }]
+                };
+            }
         }
         
         case 'local': {

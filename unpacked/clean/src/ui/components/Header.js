@@ -8,32 +8,31 @@ import React from 'react';
 import { Box, Text } from 'ink';
 
 export function Header({ model, messageCount = 0, debug = false }) {
-    return (
-        <Box flexDirection="column" marginBottom={1}>
-            <Box justifyContent="space-between">
-                <Text color="cyan" bold>
-                    🤖 Claude Code - Interactive Session
-                </Text>
-                <Text dimColor>
-                    {new Date().toLocaleString()}
-                </Text>
-            </Box>
-            
-            <Box justifyContent="space-between">
-                <Text>
-                    Model: <Text color="green">{model}</Text>
-                    {debug && <Text color="yellow"> [DEBUG]</Text>}
-                </Text>
-                <Text dimColor>
-                    Messages: {messageCount}
-                </Text>
-            </Box>
-            
-            <Box>
-                <Text dimColor>
-                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                </Text>
-            </Box>
-        </Box>
+    return React.createElement(Box, { flexDirection: "column", marginBottom: 1 },
+        React.createElement(Box, { justifyContent: "space-between" },
+            React.createElement(Text, { color: "cyan", bold: true },
+                "🤖 Claude Code - Interactive Session"
+            ),
+            React.createElement(Text, { dimColor: true },
+                new Date().toLocaleString()
+            )
+        ),
+        
+        React.createElement(Box, { justifyContent: "space-between" },
+            React.createElement(Text, null,
+                "Model: ",
+                React.createElement(Text, { color: "green" }, model),
+                debug && React.createElement(Text, { color: "yellow" }, " [DEBUG]")
+            ),
+            React.createElement(Text, { dimColor: true },
+                "Messages: ", messageCount
+            )
+        ),
+        
+        React.createElement(Box, null,
+            React.createElement(Text, { dimColor: true },
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            )
+        )
     );
 }

@@ -11,7 +11,7 @@
  */
 
 import { randomBytes, createHash } from 'crypto';
-import { open as openUrl } from 'open'; // For opening browser URLs
+import openUrl from 'open'; // For opening browser URLs
 import { configManager } from '../../config/manager.js';
 
 /**

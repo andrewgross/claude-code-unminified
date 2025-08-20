@@ -1,0 +1,28 @@
+{
+  "timestamp": "2025-08-19T11:16:29.874Z",
+  "summary": {
+    "totalTests": 12,
+    "totalPassed": 12,
+    "success": true
+  },
+  "results": {
+    "features": {
+      "passCount": 8,
+      "totalCount": 8
+    },
+    "commands": {
+      "passCount": 4,
+      "totalCount": 4
+    },
+    "comparison": {
+      "passCount": 0,
+      "totalCount": 0
+    }
+  },
+  "environment": {
+    "nodeVersion": "v22.17.0",
+    "platform": "darwin",
+    "cleanBinaryExists": true,
+    "originalBinaryExists": null
+  }
+}

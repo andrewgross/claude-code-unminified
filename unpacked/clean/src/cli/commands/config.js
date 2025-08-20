@@ -152,7 +152,7 @@ async function removeConfigValue(key, values, options) {
  */
 async function listConfigValues(options) {
     try {
-        const config = configManager.list(options.global);
+        const config = configManager.get();
         
         if (Object.keys(config).length === 0) {
             console.log(`No ${options.global ? 'global' : 'local'} configuration values found`);
