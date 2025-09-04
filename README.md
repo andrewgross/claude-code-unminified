@@ -1,41 +1,55 @@
-# Claude Code
+# Claude Code Deobfuscation Project
 
-![](https://img.shields.io/badge/Node.js-18%2B-brightgreen?style=flat-square) [![npm]](https://www.npmjs.com/package/@anthropic-ai/claude-code)
+This repository contains unminified JavaScript code from the Claude Code package, processed using humanifyjs and OpenAI GPT-4o mini for deobfuscation and analysis.
 
-[npm]: https://img.shields.io/npm/v/@anthropic-ai/claude-code.svg?style=flat-square
+## Project Structure
 
-Claude Code is an agentic coding tool that lives in your terminal, understands your codebase, and helps you code faster by executing routine tasks, explaining complex code, and handling git workflows -- all through natural language commands. Use it in your terminal, IDE, or tag @claude on Github.
+### Source Files (`claude-code-files/`)
 
-**Learn more in the [official documentation](https://docs.anthropic.com/en/docs/claude-code/overview)**.
+Contains the original minified files from the Claude Code JavaScript package:
 
-<img src="https://github.com/anthropics/claude-code/blob/main/demo.gif?raw=1" />
+- `cli.js` - Main CLI executable (9.1MB, heavily minified)
+- `sdk.mjs` - SDK module file (12KB)
+- `sdk-tools.d.ts` - TypeScript definitions for SDK tools (8.8KB)
+- `sdk.d.ts` - Main SDK TypeScript definitions (4KB)
+- `package.json` - Package metadata
+- `README.md` - Original Claude Code documentation
+- `yoga.wasm` - WebAssembly binary for layout engine (88KB)
 
-## Get started
+### Deobfuscated Output (`output/`)
 
-1. Install Claude Code:
+Contains the processed, human-readable versions of the minified code:
 
-```sh
-npm install -g @anthropic-ai/claude-code
-```
+- `deobfuscated.js` - Primary deobfuscated output from the main CLI file (30.9MB)
+- `index.js` - Additional deobfuscated module code (101KB) 
+- `bundle.json` - Metadata about the bundled modules structure
+- `node_modules/` - Dependencies used during processing
 
-2. Navigate to your project directory and run `claude`.
+## Goal
 
-## Reporting Bugs
+The primary goal of this project is to make the Claude Code JavaScript implementation more readable and analyzable by:
 
-We welcome feedback during this beta period. Use the `/bug` command to report issues directly within Claude Code, or file a [GitHub issue](https://github.com/anthropics/claude-code/issues).
+1. Deobfuscating minified variable names and function signatures
+2. Restoring readable code structure and formatting
+3. Providing insight into the internal workings of Claude Code's CLI and SDK
 
-## Data collection, usage, and retention
+## Processing Tools
 
-When you use Claude Code, we collect feedback, which includes usage data (such as code acceptance or rejections), associated conversation data, and user feedback submitted via the `/bug` command.
+- **humanifyjs** - Primary deobfuscation tool for JavaScript minified code
+- **OpenAI GPT-4o mini** - AI assistance for code analysis and variable naming
+- **Node.js toolchain** - Runtime environment for processing scripts
 
-### How we use your data
+## Usage
 
-We may use feedback to improve our products and services, but we will not train generative models using your feedback from Claude Code. Given their potentially sensitive nature, we store user feedback transcripts for only 30 days.
+The deobfuscated files in `output/` can be examined to understand:
+- Claude Code's architecture and implementation patterns
+- API integration methods with Anthropic's services
+- CLI command handling and user interface logic
+- SDK functionality and tool integrations
 
-If you choose to send us feedback about Claude Code, such as transcripts of your usage, Anthropic may use that feedback to debug related issues and improve Claude Code's functionality (e.g., to reduce the risk of similar bugs occurring in the future).
+## Notes
 
-### Privacy safeguards
-
-We have implemented several safeguards to protect your data, including limited retention periods for sensitive information, restricted access to user session data, and clear policies against using feedback for model training.
-
-For full details, please review our [Commercial Terms of Service](https://www.anthropic.com/legal/commercial-terms) and [Privacy Policy](https://www.anthropic.com/legal/privacy).
+- The original files remain unchanged in `claude-code-files/`
+- All deobfuscated output is for analysis purposes only
+- The deobfuscation process may not be 100% accurate due to aggressive minification
+- Some variable names and structures may still require manual interpretation
